@@ -97,7 +97,7 @@ async def check_draft_start():
         if draft.time_until_draft_starts() == 0:
             await draft.run_draft(bot)
 
-check_draft_start.start()  
+asyncio.run(check_draft_start.start()) 
 
 @bot.event
 async def on_message(message):
