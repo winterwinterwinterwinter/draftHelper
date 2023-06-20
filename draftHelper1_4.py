@@ -88,6 +88,17 @@ db.create_tables([Draft, Pokemon, Participant, DraftPokemon])
 async def on_ready():
     print(f'Logged in as {bot.user.name} ({bot.user.id})')
 
+@tasks.loop(seconds=60)
+async def check_draft_start():
+    now = datetime.datetime.utcnow()
+    upcoming_drafts = Draft.select().where(Draft.draft_datetime >= now)
+
+    for draft in upcoming_drafts:
+        if draft.time_until_draft_starts() == 0:
+            await draft.run_draft(bot)
+
+check_draft_start.start()  
+
 @bot.event
 async def on_message(message):
     if message.author == bot.user:
@@ -170,16 +181,7 @@ async def setDraft(ctx):
     except Exception as e:
         await ctx.send(f"An error occurred while setting up the draft: {e}")
 
-@tasks.loop(seconds=60)
-async def check_draft_start():
-    now = datetime.datetime.utcnow()
-    upcoming_drafts = Draft.select().where(Draft.draft_datetime >= now)
 
-    for draft in upcoming_drafts:
-        if draft.time_until_draft_starts() == 0:
-            await draft.run_draft(bot)
-
-check_draft_start.start()
 
 @bot.command()
 async def pokemonLeft(ctx):
