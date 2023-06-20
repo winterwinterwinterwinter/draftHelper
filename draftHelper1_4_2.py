@@ -87,6 +87,7 @@ db.create_tables([Draft, Pokemon, Participant, DraftPokemon])
 @bot.event
 async def on_ready():
     print(f'Logged in as {bot.user.name} ({bot.user.id})')
+    check_draft_start.start()
 
 @tasks.loop(seconds=60)
 async def check_draft_start():
@@ -96,8 +97,6 @@ async def check_draft_start():
     for draft in upcoming_drafts:
         if draft.time_until_draft_starts() == 0:
             await draft.run_draft(bot)
-
-asyncio.run(check_draft_start.start()) 
 
 @bot.event
 async def on_message(message):
@@ -181,6 +180,14 @@ async def setDraft(ctx):
     except Exception as e:
         await ctx.send(f"An error occurred while setting up the draft: {e}")
 
+@tasks.loop(seconds=60)
+async def check_draft_start():
+    now = datetime.datetime.utcnow()
+    upcoming_drafts = Draft.select().where(Draft.draft_datetime >= now)
+
+    for draft in upcoming_drafts:
+        if draft.time_until_draft_starts() == 0:
+            await draft.run_draft(bot)
 
 
 @bot.command()
@@ -229,6 +236,8 @@ async def history(ctx):
 async def on_disconnect():
     db.close()
 
+bot.remove_command('help')
+
 @bot.command()
 async def help(ctx):
     embed = discord.Embed(title="Draft Bot Help", description="List of available commands:")
@@ -245,4 +254,6 @@ async def help(ctx):
     
     await ctx.send(embed=embed)
 
-bot.run('YOUR_DISCORD_TOKEN')
+
+
+bot.run(os.getenv('YOUR_BOT_TOKEN'))
